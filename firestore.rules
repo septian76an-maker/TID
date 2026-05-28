@@ -1,0 +1,96 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'septian76an@gmail.com' ||
+        request.auth.token.email == 'admin@tidsystem.io'
+      );
+    }
+
+    function isValidString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation Helpers
+    function isValidPasswordEntry(data) {
+      return data.keys().hasAll(['tid', 'password', 'status', 'session', 'createdAt']) &&
+        data.keys().size() == 5 &&
+        isValidString(data.tid, 1, 50) &&
+        isValidString(data.password, 1, 50) &&
+        isValidString(data.status, 1, 20) &&
+        (data.status == 'Berbayar' || data.status == 'Trial' || data.status == 'Expired') &&
+        isValidString(data.session, 1, 50) &&
+        data.createdAt is number;
+    }
+
+    function isValidStats(data) {
+      return data.keys().hasAll(['userActive', 'deviceInstall', 'userTrial']) &&
+        data.keys().size() == 3 &&
+        data.userActive is number &&
+        data.deviceInstall is number &&
+        data.userTrial is number;
+    }
+
+    // Passwords Collection
+    match /passwords/{passwordId} {
+      allow read: if isAdmin();
+      
+      allow create: if isAdmin() &&
+        isValidId(passwordId) &&
+        isValidPasswordEntry(incoming());
+
+      allow update: if isAdmin() &&
+        isValidPasswordEntry(incoming()) &&
+        (
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'tid', 'password', 'status', 'session', 'createdAt'
+          ])
+        );
+
+      allow delete: if isAdmin();
+    }
+
+    // Stats Collection
+    match /stats/{statId} {
+      allow read: if isAdmin();
+
+      allow create: if isAdmin() &&
+        isValidId(statId) &&
+        isValidStats(incoming());
+
+      allow update: if isAdmin() &&
+        isValidStats(incoming()) &&
+        (
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'userActive', 'deviceInstall', 'userTrial'
+          ])
+        );
+
+      allow delete: if isAdmin();
+    }
+  }
+}

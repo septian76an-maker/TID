@@ -1,0 +1,38 @@
+{
+  "entities": {
+    "PasswordEntry": {
+      "title": "PasswordEntry",
+      "description": "Represents an installed device TID, trial info, and password",
+      "type": "object",
+      "properties": {
+        "tid": { "type": "string" },
+        "password": { "type": "string" },
+        "status": { "type": "string", "enum": ["Berbayar", "Trial", "Expired"] },
+        "session": { "type": "string" },
+        "createdAt": { "type": "number", "description": "Timestamp" }
+      },
+      "required": ["tid", "password", "status", "session", "createdAt"]
+    },
+    "Stats": {
+      "title": "Stats",
+      "description": "Global stats for the application",
+      "type": "object",
+      "properties": {
+        "userActive": { "type": "number" },
+        "deviceInstall": { "type": "number" },
+        "userTrial": { "type": "number" }
+      },
+      "required": ["userActive", "deviceInstall", "userTrial"]
+    }
+  },
+  "firestore": {
+    "/passwords/{passwordId}": {
+      "schema": { "$ref": "#/entities/PasswordEntry" },
+      "description": "Collection of device registrations"
+    },
+    "/stats/{statId}": {
+      "schema": { "$ref": "#/entities/Stats" },
+      "description": "Global stats document"
+    }
+  }
+}
