@@ -43,6 +43,7 @@ export function PasswordPage() {
     try {
       const randomChars = generateRandomString(5);
       const now = Date.now();
+      const fakeDeviceId = `android-${generateRandomString(16).toLowerCase()}`;
       
       const passRef = collection(db, 'passwords');
       await addDoc(passRef, {
@@ -51,6 +52,7 @@ export function PasswordPage() {
         status: "Berbayar",
         session: "Life Time",
         createdAt: now,
+        deviceId: fakeDeviceId,
       });
 
       await addDoc(passRef, {
@@ -59,6 +61,7 @@ export function PasswordPage() {
         status: "Trial",
         session: "8 Jam",
         createdAt: now,
+        deviceId: fakeDeviceId,
       });
 
       // Update stats
@@ -121,9 +124,12 @@ export function PasswordPage() {
     }
   };
 
-  const handleNonActive = async (id: string) => {
+  const handleToggleStatus = async (item: PasswordEntry) => {
     try {
-      await updateDoc(doc(db, 'passwords', id), { status: 'Expired' });
+      const newStatus = item.status === 'Expired' 
+        ? (item.tid.startsWith('Trial-') ? 'Trial' : 'Berbayar') 
+        : 'Expired';
+      await updateDoc(doc(db, 'passwords', item.id), { status: newStatus });
     } catch (err) {
       console.error(err);
     }
@@ -169,6 +175,7 @@ export function PasswordPage() {
             <thead className="text-slate-500 text-xs uppercase tracking-tighter sticky top-0 bg-slate-50/95 dark:bg-[#060c1c]/95 backdrop-blur-md z-10 border-b border-slate-200 dark:border-slate-800/50">
               <tr>
                 <th className="px-8 py-5 font-bold whitespace-nowrap">Terminal ID (TID)</th>
+                <th className="px-8 py-5 font-bold whitespace-nowrap">ID Perangkat</th>
                 <th className="px-8 py-5 font-bold whitespace-nowrap">Password</th>
                 <th className="px-8 py-5 font-bold whitespace-nowrap">Status</th>
                 <th className="px-8 py-5 font-bold whitespace-nowrap">Session Validity</th>
@@ -181,6 +188,9 @@ export function PasswordPage() {
                 <tr key={item.id} className="border-b border-slate-100 dark:border-slate-800/30 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                   <td className={`px-8 py-5 font-mono whitespace-nowrap ${item.status === 'Berbayar' ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-500'}`}>
                     {item.tid}
+                  </td>
+                  <td className="px-8 py-5 font-mono whitespace-nowrap text-slate-500 text-xs">
+                    {item.deviceId || '-'}
                   </td>
                   <td className={`px-8 py-5 font-mono whitespace-nowrap ${item.status === 'Berbayar' ? 'tracking-widest text-slate-900 dark:text-slate-200 font-semibold' : 'text-slate-500 dark:text-slate-500 uppercase'}`}>
                     {item.password}
@@ -217,11 +227,14 @@ export function PasswordPage() {
                   <td className="px-8 py-5 whitespace-nowrap">
                     <div className="flex gap-2">
                       <button
-                        onClick={() => handleNonActive(item.id)}
-                        disabled={item.status === 'Expired'}
-                        className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-500/10 dark:hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
+                        onClick={() => handleToggleStatus(item)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                          item.status === 'Expired'
+                            ? 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                            : 'bg-amber-50 hover:bg-amber-100 dark:bg-amber-500/10 dark:hover:bg-amber-500/20 text-amber-600 dark:text-amber-400'
+                        }`}
                       >
-                        Non-active
+                        {item.status === 'Expired' ? 'Aktifkan' : 'Non-aktif'}
                       </button>
                       <button
                         onClick={() => handleDelete(item.id, item.status)}

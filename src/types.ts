@@ -11,4 +11,5 @@ export type PasswordEntry = {
   status: 'Berbayar' | 'Trial' | 'Expired';
   session: string;
   createdAt: number;
+  deviceId?: string;
 };

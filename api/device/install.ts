@@ -75,24 +75,58 @@ export default async function handler(req: any, res: any) {
 
   try {
     const db = getDb();
+    
+    let body = req.body || {};
+    if (typeof body === 'string') {
+      try { body = JSON.parse(body); } catch(e) {}
+    }
+    const deviceId = body.deviceId;
+    
+    if (deviceId) {
+      const existingSnapshot = await db.collection('passwords').where('deviceId', '==', deviceId).get();
+      if (!existingSnapshot.empty) {
+        let paidData = null;
+        let trialData = null;
+        
+        for (const doc of existingSnapshot.docs) {
+          const data = doc.data();
+          if (data.status === 'Berbayar' || data.status === 'Expired' && data.tid.startsWith('TID-')) paidData = data;
+          if (data.status === 'Trial' || data.status === 'Expired' && data.tid.startsWith('Trial-')) trialData = data;
+        }
+        
+        if (paidData && trialData) {
+          return res.status(200).json({
+            success: true,
+            message: "Device already registered",
+            credentials: {
+              paid: paidData,
+              trial: trialData
+            }
+          });
+        }
+      }
+    }
+
     const randomChars = generateRandomString(5);
     const now = Date.now();
     
-    const newPaid = {
+    const newPaid: any = {
       tid: `TID-${randomChars}`,
       password: Math.floor(100000 + Math.random() * 900000).toString(),
       status: "Berbayar",
       session: "Life Time",
       createdAt: now,
     };
+    if (deviceId) newPaid.deviceId = deviceId;
 
-    const newTrial = {
+    const newTrial: any = {
       tid: `Trial-${randomChars}`,
       password: "trial",
       status: "Trial",
       session: "8 Jam",
       createdAt: now,
     };
+    if (deviceId) newTrial.deviceId = deviceId;
 
     // Note: This requires proper Firestore credentials in Vercel Environment Variables
     await db.collection('passwords').add(newPaid);
