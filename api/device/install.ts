@@ -85,15 +85,16 @@ export default async function handler(req: any, res: any) {
     if (deviceId) {
       const existingSnapshot = await db.collection('passwords').where('deviceId', '==', deviceId).get();
       if (!existingSnapshot.empty) {
-        let theData = existingSnapshot.docs[0].data();
-        
         let paidData = null;
         let trialData = null;
         
-        if (theData.status === 'Berbayar' || (theData.status === 'Expired' && theData.tid.startsWith('TID-'))) {
-          paidData = theData;
-        } else {
-          trialData = theData;
+        for (const doc of existingSnapshot.docs) {
+          const theData = doc.data();
+          if (theData.status === 'Berbayar' || (theData.status === 'Expired' && theData.tid.startsWith('TID-'))) {
+            paidData = theData;
+          } else {
+            trialData = theData;
+          }
         }
         
         return res.status(200).json({
