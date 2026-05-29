@@ -2,24 +2,23 @@ import { initializeApp, cert, getApps, getApp } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import firebaseConfig from "../../firebase-applet-config.json";
 
-// Prevent initializeApp from throwing if called multiple times in Serverless
-try {
+function getDb() {
   if (!getApps().length) {
-    // Requires FIREBASE_SERVICE_ACCOUNT environment variable in Vercel!
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-      initializeApp({
-        credential: cert(serviceAccount)
-      });
+      try {
+        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+        initializeApp({
+          credential: cert(serviceAccount)
+        });
+      } catch (err: any) {
+        throw new Error("Gagal membaca konfigurasi FIREBASE_SERVICE_ACCOUNT: " + err.message);
+      }
     } else {
       initializeApp();
     }
   }
-} catch (error) {
-  // Ignore
+  return getFirestore(getApp(), firebaseConfig.firestoreDatabaseId);
 }
-
-const db = getFirestore(getApp(), firebaseConfig.firestoreDatabaseId);
 
 function generateRandomString(length: number) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -52,6 +51,7 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
+    const db = getDb();
     const randomChars = generateRandomString(5);
     const now = Date.now();
     
