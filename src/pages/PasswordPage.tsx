@@ -81,8 +81,10 @@ export function PasswordPage() {
       const newPassword = Math.floor(100000 + Math.random() * 900000).toString();
       const newTid = item.tid.replace('Trial-', 'TID-');
       await updateDoc(doc(db, 'passwords', item.id), { status: 'Berbayar', session: 'Life Time', password: newPassword, tid: newTid });
-    } catch (err) {
+      alert("Upgrade berhasil!");
+    } catch (err: any) {
       console.error(err);
+      alert("Gagal mengupdate: " + err.message);
     }
   };
 
@@ -133,8 +135,9 @@ export function PasswordPage() {
         ? (item.tid.startsWith('Trial-') ? 'Trial' : 'Berbayar') 
         : 'Expired';
       await updateDoc(doc(db, 'passwords', item.id), { status: newStatus });
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert("Gagal mengupdate: " + err.message);
     }
   };
 

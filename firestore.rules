@@ -38,13 +38,13 @@ service cloud.firestore {
     // Validation Helpers
     function isValidPasswordEntry(data) {
       return data.keys().hasAll(['tid', 'password', 'status', 'session', 'createdAt']) &&
-        data.keys().size() == 5 &&
         isValidString(data.tid, 1, 50) &&
         isValidString(data.password, 1, 50) &&
         isValidString(data.status, 1, 20) &&
         (data.status == 'Berbayar' || data.status == 'Trial' || data.status == 'Expired') &&
         isValidString(data.session, 1, 50) &&
-        data.createdAt is number;
+        data.createdAt is number &&
+        (!data.keys().hasAny(['deviceId']) || (data.deviceId is string));
     }
 
     function isValidStats(data) {
@@ -67,7 +67,7 @@ service cloud.firestore {
         isValidPasswordEntry(incoming()) &&
         (
           incoming().diff(existing()).affectedKeys().hasOnly([
-            'tid', 'password', 'status', 'session', 'createdAt'
+            'tid', 'password', 'status', 'session', 'createdAt', 'deviceId'
           ])
         );
 
