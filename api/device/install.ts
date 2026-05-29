@@ -1,5 +1,6 @@
-import { initializeApp, cert, getApps } from "firebase-admin/app";
+import { initializeApp, cert, getApps, getApp } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import firebaseConfig from "../../firebase-applet-config.json";
 
 // Prevent initializeApp from throwing if called multiple times in Serverless
 try {
@@ -18,7 +19,7 @@ try {
   // Ignore
 }
 
-const db = getFirestore();
+const db = getFirestore(getApp(), firebaseConfig.firestoreDatabaseId);
 
 function generateRandomString(length: number) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';

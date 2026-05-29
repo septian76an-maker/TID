@@ -1,9 +1,10 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { initializeApp, cert } from "firebase-admin/app";
+import { initializeApp, cert, getApp } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import cors from "cors";
+import firebaseConfig from "./firebase-applet-config.json";
 
 // Prevent initializeApp from throwing if called multiple times
 try {
@@ -22,7 +23,7 @@ try {
   // Ignore already initialized error
 }
 
-const db = getFirestore();
+const db = getFirestore(getApp(), firebaseConfig.firestoreDatabaseId);
 
 function generateRandomString(length: number) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
