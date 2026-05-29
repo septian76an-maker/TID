@@ -1,6 +1,29 @@
 import { initializeApp, cert, getApps, getApp } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
-import firebaseConfig from "../../firebase-applet-config.json";
+import fs from "fs";
+import path from "path";
+
+function getDbId() {
+  try {
+    const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
+    if (fs.existsSync(configPath)) {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      return config.firestoreDatabaseId || "(default)";
+    }
+  } catch (e) {
+    console.error("Error reading firebase-applet-config.json", e);
+  }
+  // Try relative to __dirname as fallback if Vercel bundles it differently
+  try {
+    const configPath2 = path.join(process.cwd(), '..', '..', 'firebase-applet-config.json');
+    if (fs.existsSync(configPath2)) {
+      const config = JSON.parse(fs.readFileSync(configPath2, 'utf8'));
+      return config.firestoreDatabaseId || "(default)";
+    }
+  } catch(e) {}
+  
+  return "ai-studio-61d456ba-f055-400a-9fe8-b8db038e866a"; // fallback to known ID
+}
 
 function getDb() {
   if (!getApps().length) {
@@ -17,7 +40,7 @@ function getDb() {
       initializeApp();
     }
   }
-  return getFirestore(getApp(), firebaseConfig.firestoreDatabaseId);
+  return getFirestore(getApp(), getDbId());
 }
 
 function generateRandomString(length: number) {
