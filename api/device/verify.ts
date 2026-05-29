@@ -62,18 +62,25 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const { password } = req.body;
+    let body = req.body || {};
+    if (typeof body === 'string') {
+      try { body = JSON.parse(body); } catch(e) {}
+    }
+    const { password, deviceId } = body;
     
     if (!password) {
       return res.status(400).json({ success: false, message: "Field 'password' wajib diisi untuk verifikasi." });
     }
 
     const db = getDb();
+    
     // Cari password di tabel firestore 'passwords'
-    const snapshot = await db.collection('passwords')
-      .where('password', '==', String(password))
-      .limit(1)
-      .get();
+    let queryRef = db.collection('passwords').where('password', '==', String(password));
+    if (deviceId) {
+       queryRef = queryRef.where('deviceId', '==', deviceId);
+    }
+    
+    const snapshot = await queryRef.limit(1).get();
 
     if (snapshot.empty) {
       return res.status(401).json({ success: false, message: "Password salah atau tidak ditemukan di server." });

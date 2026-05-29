@@ -46,14 +46,6 @@ export function PasswordPage() {
       const fakeDeviceId = `android-${generateRandomString(16).toLowerCase()}`;
       
       const passRef = collection(db, 'passwords');
-      await addDoc(passRef, {
-        tid: `TID-${randomChars}`,
-        password: Math.floor(100000 + Math.random() * 900000).toString(),
-        status: "Berbayar",
-        session: "Life Time",
-        createdAt: now,
-        deviceId: fakeDeviceId,
-      });
 
       await addDoc(passRef, {
         tid: `Trial-${randomChars}`,
@@ -80,6 +72,17 @@ export function PasswordPage() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpgrade = async (item: PasswordEntry) => {
+    if (!window.confirm("Upgrade to Berbayar? This will generate a new password.")) return;
+    try {
+      const newPassword = Math.floor(100000 + Math.random() * 900000).toString();
+      const newTid = item.tid.replace('Trial-', 'TID-');
+      await updateDoc(doc(db, 'passwords', item.id), { status: 'Berbayar', session: 'Life Time', password: newPassword, tid: newTid });
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -226,6 +229,14 @@ export function PasswordPage() {
                   </td>
                   <td className="px-8 py-5 whitespace-nowrap">
                     <div className="flex gap-2">
+                      {item.status === 'Trial' && (
+                        <button
+                          onClick={() => handleUpgrade(item)}
+                          className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-semibold transition-colors"
+                        >
+                          Upgrade Berbayar
+                        </button>
+                      )}
                       <button
                         onClick={() => handleToggleStatus(item)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${

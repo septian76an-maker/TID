@@ -85,39 +85,30 @@ export default async function handler(req: any, res: any) {
     if (deviceId) {
       const existingSnapshot = await db.collection('passwords').where('deviceId', '==', deviceId).get();
       if (!existingSnapshot.empty) {
+        let theData = existingSnapshot.docs[0].data();
+        
         let paidData = null;
         let trialData = null;
         
-        for (const doc of existingSnapshot.docs) {
-          const data = doc.data();
-          if (data.status === 'Berbayar' || data.status === 'Expired' && data.tid.startsWith('TID-')) paidData = data;
-          if (data.status === 'Trial' || data.status === 'Expired' && data.tid.startsWith('Trial-')) trialData = data;
+        if (theData.status === 'Berbayar' || (theData.status === 'Expired' && theData.tid.startsWith('TID-'))) {
+          paidData = theData;
+        } else {
+          trialData = theData;
         }
         
-        if (paidData && trialData) {
-          return res.status(200).json({
-            success: true,
-            message: "Device already registered",
-            credentials: {
-              paid: paidData,
-              trial: trialData
-            }
-          });
-        }
+        return res.status(200).json({
+          success: true,
+          message: "Device already registered",
+          credentials: {
+            paid: paidData,
+            trial: trialData
+          }
+        });
       }
     }
 
     const randomChars = generateRandomString(5);
     const now = Date.now();
-    
-    const newPaid: any = {
-      tid: `TID-${randomChars}`,
-      password: Math.floor(100000 + Math.random() * 900000).toString(),
-      status: "Berbayar",
-      session: "Life Time",
-      createdAt: now,
-    };
-    if (deviceId) newPaid.deviceId = deviceId;
 
     const newTrial: any = {
       tid: `Trial-${randomChars}`,
@@ -128,8 +119,6 @@ export default async function handler(req: any, res: any) {
     };
     if (deviceId) newTrial.deviceId = deviceId;
 
-    // Note: This requires proper Firestore credentials in Vercel Environment Variables
-    await db.collection('passwords').add(newPaid);
     await db.collection('passwords').add(newTrial);
 
     // Update global Stats safely
@@ -152,9 +141,9 @@ export default async function handler(req: any, res: any) {
 
     res.status(200).json({ 
       success: true, 
-      message: "Device successfully registered",
+      message: "Device successfully registered as Trial",
       credentials: {
-        paid: newPaid,
+        paid: null,
         trial: newTrial
       }
     });
